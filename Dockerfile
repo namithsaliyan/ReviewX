@@ -1,13 +1,11 @@
-# Stage 1: Build the application
+# Use the official Golang image to build the Go application
 FROM golang:1.21 AS builder
 
 # Set the Current Working Directory inside the container
 WORKDIR /app
 
-# Copy Go Modules manifests
-COPY go.mod ./
-# Generate go.sum if it does not exist
-RUN if [ ! -f go.sum ]; then go mod tidy; fi
+# Copy the Go Modules manifests
+COPY go.mod go.sum ./
 
 # Download the Go Modules dependencies
 RUN go mod download
@@ -15,10 +13,10 @@ RUN go mod download
 # Copy the source code into the container
 COPY . .
 
-# Build the Go application
+# Build the Go app
 RUN go build -o main .
 
-# Stage 2: Create a minimal image to run the application
+# Use a smaller image to run the Go application
 FROM debian:bullseye-slim
 
 # Set the Current Working Directory inside the container
