@@ -1,32 +1,29 @@
-# Use the official Golang image to build the Go application
+# Build stage
 FROM golang:1.22 AS builder
 
 # Set the Current Working Directory inside the container
 WORKDIR /app
 
-# Copy the Go Modules manifests
+# Copy go.mod and go.sum files
 COPY go.mod go.sum ./
 
-# Download the Go Modules dependencies
+# Download dependencies
 RUN go mod download
 
-# Copy the source code into the container
+# Copy the rest of the application source code
 COPY . .
 
-# Build the Go app
+# Build the Go application
 RUN go build -o main .
 
-# Use a smaller image to run the Go application
-FROM debian:bullseye-slim
+# Runtime stage
+FROM debian:bookworm
 
 # Set the Current Working Directory inside the container
 WORKDIR /root/
 
-# Copy the Pre-built binary file from the previous stage
+# Copy the binary from the build stage
 COPY --from=builder /app/main .
-
-# Copy the SQLite database file (if needed)
-COPY reviews.db .
 
 # Expose port 8080 to the outside world
 EXPOSE 8080
