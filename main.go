@@ -96,10 +96,24 @@ func saveReview(review *Review) error {
     return err
 }
 
-// deleteReview removes a review by ID from the database
+// deleteReview removes a review by ID from the database and returns an error if no review is found
 func deleteReview(id int) error {
-    _, err := db.Exec("DELETE FROM reviews WHERE id = ?", id)
-    return err
+    result, err := db.Exec("DELETE FROM reviews WHERE id = ?", id)
+    if err != nil {
+        return err
+    }
+
+    // Check how many rows were affected
+    rowsAffected, err := result.RowsAffected()
+    if err != nil {
+        return err
+    }
+
+    if rowsAffected == 0 {
+        return fmt.Errorf("no review found with id %d", id)
+    }
+
+    return nil
 }
 
 // loadReviews retrieves all reviews from the database
@@ -207,7 +221,7 @@ func deleteReviewHandler(w http.ResponseWriter, r *http.Request) {
 
     // Remove the review from the database
     if err := deleteReview(requestData.ID); err != nil {
-        http.Error(w, "Failed to delete review", http.StatusInternalServerError)
+        http.Error(w, fmt.Sprintf("Failed to delete review: %v", err), http.StatusInternalServerError)
         return
     }
 
