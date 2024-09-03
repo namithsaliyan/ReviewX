@@ -202,7 +202,7 @@ func handleGetReviews(w http.ResponseWriter, r *http.Request) {
 // deleteReviewHandler handles the deletion of a review by ID
 func deleteReviewHandler(w http.ResponseWriter, r *http.Request) {
     if r.Method != http.MethodDelete {
-        http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+        respondWithJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "Method not allowed"})
         return
     }
 
@@ -211,7 +211,7 @@ func deleteReviewHandler(w http.ResponseWriter, r *http.Request) {
         ID int `json:"id"`
     }
     if err := json.NewDecoder(r.Body).Decode(&requestData); err != nil {
-        http.Error(w, "Invalid request payload", http.StatusBadRequest)
+        respondWithJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid request payload"})
         return
     }
 
@@ -221,12 +221,23 @@ func deleteReviewHandler(w http.ResponseWriter, r *http.Request) {
 
     // Remove the review from the database
     if err := deleteReview(requestData.ID); err != nil {
-        http.Error(w, fmt.Sprintf("Failed to delete review: %v", err), http.StatusInternalServerError)
+        respondWithJSON(w, http.StatusInternalServerError, map[string]string{"error": fmt.Sprintf("Failed to delete review: %v", err)})
         return
     }
 
     // Respond with success
-    response := map[string]bool{"success": true}
+    respondWithJSON(w, http.StatusOK, map[string]bool{"success": true})
+}
+
+// respondWithJSON writes a JSON response to the ResponseWriter
+func respondWithJSON(w http.ResponseWriter, status int, payload interface{}) {
+    response, err := json.Marshal(payload)
+    if err != nil {
+        http.Error(w, "Failed to marshal JSON response", http.StatusInternalServerError)
+        return
+    }
+
     w.Header().Set("Content-Type", "application/json")
-    json.NewEncoder(w).Encode(response)
+    w.WriteHeader(status)
+    w.Write(response)
 }
